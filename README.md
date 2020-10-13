@@ -58,7 +58,9 @@ Widget build(BuildContext context) {
       ));
 }
 
-```xml
+```
+
+
 ## Step 2
 
 Create a common delegate for both data pager and datagrid and do the followings. Please note that by default DataGridSource is extended with the DataPagerDelegate.
@@ -69,8 +71,8 @@ Create a common delegate for both data pager and datagrid and do the followings.
 4.	Override the SfDataPager.delegate.rowCount property and SfDataPager.delegate.handlePageChanges method in SfDataGrid.DataGridSource.
 5.	You can load the data for the specific page in handlePageChanges method. This method is called for every page navigation from data pager.
 
-```xml
 
+```xml
 class OrderInfoDataSource extends DataGridSource<OrderInfo> {
   @override
   List<OrderInfo> get dataSource => paginatedDataSource;
@@ -194,7 +196,6 @@ Widget build(BuildContext context) {
 }
 
 ```
-
 
 * [User guide documentation](https://help.syncfusion.com/flutter/datagrid/paging)
 
