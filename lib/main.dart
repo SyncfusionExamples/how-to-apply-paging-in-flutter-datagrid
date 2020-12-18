@@ -128,7 +128,7 @@ class OrderInfoDataSource extends DataGridSource<OrderInfo> {
 
     paginatedDataSource = List.from(
         orders.getRange(startRowIndex, endIndex).toList(growable: false));
-    notifyDataSourceListeners();
+    notifyListeners();
     return true;
   }
 }
