@@ -11,7 +11,7 @@ void main() {
 /// Render data pager
 class PaginatedDataGrid extends StatefulWidget {
   /// Create data pager
-  const PaginatedDataGrid({Key key}) : super(key: key);
+  const PaginatedDataGrid({Key? key}) : super(key: key);
 
   @override
   _PaginatedDataGrid createState() => _PaginatedDataGrid();
@@ -19,18 +19,20 @@ class PaginatedDataGrid extends StatefulWidget {
 
 List<OrderInfo> orders = [];
 List<OrderInfo> paginatedDataSource = [];
+final int rowsPerPage = 20;
 
 class _PaginatedDataGrid extends State<PaginatedDataGrid> {
   static const double dataPagerHeight = 60;
 
   final _OrderInfoRepository _repository = _OrderInfoRepository();
-  final OrderInfoDataSource _orderInfoDataSource = OrderInfoDataSource();
+  late OrderInfoDataSource _orderInfoDataSource;
 
   @override
   void initState() {
     super.initState();
-    _orderInfoDataSource..addListener(updateWidget);
     orders = _repository.getOrderDetails(300);
+    _orderInfoDataSource = OrderInfoDataSource();
+    _orderInfoDataSource..addListener(updateWidget);
   }
 
   updateWidget() {
@@ -55,31 +57,42 @@ class _PaginatedDataGrid extends State<PaginatedDataGrid> {
                         source: _orderInfoDataSource,
                         columnWidthMode: ColumnWidthMode.fill,
                         columns: <GridColumn>[
-                          GridNumericColumn(
-                              mappingName: 'orderID', headerText: 'Order ID')
-                            ..headerTextAlignment = Alignment.centerRight,
                           GridTextColumn(
-                              mappingName: 'customerID',
-                              headerText: 'Customer Name')
-                            ..padding = EdgeInsets.zero,
-                          GridDateTimeColumn(
-                              mappingName: 'orderDate',
-                              headerText: 'Order Date')
-                            ..dateFormat = DateFormat.yMd()
-                            ..padding = EdgeInsets.zero,
-                          GridNumericColumn(
-                              mappingName: 'freight', headerText: 'Freight')
-                            ..headerTextAlignment = Alignment.center
-                            ..textAlignment = Alignment.center
-                            ..numberFormat = NumberFormat.currency(
-                                locale: 'en_US', symbol: '\$'),
+                              columnName: 'orderID',
+                              label: Container(
+                                  padding: EdgeInsets.all(16.0),
+                                  alignment: Alignment.centerRight,
+                                  child: Text(
+                                    'Order ID',
+                                  ))),
+                          GridTextColumn(
+                              columnName: 'customerID',
+                              label: Container(
+                                  padding: EdgeInsets.all(8.0),
+                                  alignment: Alignment.center,
+                                  child: Text('Customer ID'))),
+                          GridTextColumn(
+                              columnName: 'orderDate',
+                              label: Container(
+                                  padding: EdgeInsets.all(8.0),
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    'Order Date',
+                                    overflow: TextOverflow.ellipsis,
+                                  ))),
+                          GridTextColumn(
+                              columnName: 'freight',
+                              label: Container(
+                                  padding: EdgeInsets.all(8.0),
+                                  alignment: Alignment.center,
+                                  child: Text('Freight'))),
                         ])),
                 Container(
                   height: dataPagerHeight,
                   color: Colors.white,
                   child: SfDataPager(
+                    pageCount: (orders.length / rowsPerPage).ceilToDouble(),
                     delegate: _orderInfoDataSource,
-                    rowsPerPage: 20,
                     direction: Axis.horizontal,
                   ),
                 )
@@ -90,46 +103,54 @@ class _PaginatedDataGrid extends State<PaginatedDataGrid> {
   }
 }
 
-class OrderInfoDataSource extends DataGridSource<OrderInfo> {
-  @override
-  List<OrderInfo> get dataSource => paginatedDataSource;
-
-  @override
-  Object getValue(OrderInfo orderInfos, String columnName) {
-    switch (columnName) {
-      case 'orderID':
-        return orderInfos.orderID;
-        break;
-      case 'customerID':
-        return orderInfos.customerID;
-        break;
-      case 'freight':
-        return orderInfos.freight;
-        break;
-      case 'orderDate':
-        return orderInfos.orderData;
-        break;
-      default:
-        return '';
-        break;
-    }
+class OrderInfoDataSource extends DataGridSource {
+  OrderInfoDataSource() {
+    paginatedDataSource = orders.getRange(0, rowsPerPage).toList();
+    buildPaginatedDataGridRows();
   }
 
-  @override
-  int get rowCount => orders.length;
+  List<DataGridRow> dataGridRows = [];
 
   @override
-  Future<bool> handlePageChange(int oldPageIndex, int newPageIndex,
-      int startRowIndex, int rowsPerPage) async {
+  List<DataGridRow> get rows => dataGridRows;
+
+  @override
+  Future<bool> handlePageChange(int oldPageIndex, int newPageIndex) async {
+    int startRowIndex = newPageIndex * rowsPerPage;
     int endIndex = startRowIndex + rowsPerPage;
+
     if (endIndex > orders.length) {
       endIndex = orders.length - 1;
     }
 
     paginatedDataSource = List.from(
         orders.getRange(startRowIndex, endIndex).toList(growable: false));
+    buildPaginatedDataGridRows();
     notifyListeners();
     return true;
+  }
+
+  @override
+  DataGridRowAdapter buildRow(DataGridRow row) {
+    return DataGridRowAdapter(
+        cells: row.getCells().map<Widget>((e) {
+      return Container(
+        alignment: Alignment.center,
+        padding: EdgeInsets.all(8.0),
+        child: Text(e.value.toString()),
+      );
+    }).toList());
+  }
+
+  void buildPaginatedDataGridRows() {
+    dataGridRows = paginatedDataSource.map<DataGridRow>((dataGridRow) {
+      return DataGridRow(cells: [
+        DataGridCell(columnName: 'orderID', value: dataGridRow.orderID),
+        DataGridCell(columnName: 'customerID', value: dataGridRow.customerID),
+        DataGridCell(columnName: 'orderDate', value: dataGridRow.orderData),
+        DataGridCell(columnName: 'freight', value: dataGridRow.freight),
+      ]);
+    }).toList(growable: false);
   }
 }
 
@@ -149,18 +170,18 @@ class OrderInfo {
       this.orderData,
       this.isClosed});
 
-  final String orderID;
-  final String employeeID;
-  final String customerID;
-  final String firstName;
-  final String lastName;
-  final String gender;
-  final String shipCity;
-  final String shipCountry;
-  final double freight;
-  final DateTime shippingDate;
-  final DateTime orderData;
-  final bool isClosed;
+  final String? orderID;
+  final String? employeeID;
+  final String? customerID;
+  final String? firstName;
+  final String? lastName;
+  final String? gender;
+  final String? shipCity;
+  final String? shipCountry;
+  final String? freight;
+  final DateTime? shippingDate;
+  final String? orderData;
+  final bool? isClosed;
 }
 
 class _OrderInfoRepository {
@@ -362,12 +383,14 @@ class _OrderInfoRepository {
     List<OrderInfo> orderDetails = [];
 
     for (int i = 10001; i <= count + 10000; i++) {
-      final String ship_Country =
+      final String _shipCountry =
           shipCountry[random.nextInt(shipCountry.length)];
-      final List<String> ship_CityColl = shipCity[ship_Country];
+      final List<String> _shipCityColl = shipCity[_shipCountry]!;
       final DateTime shippedData = shippedDate[i - 10001];
-      final DateTime orderedData =
-          DateTime(shippedData.year, shippedData.month, shippedData.day - 2);
+      final String orderedData = DateFormat.yMd().format(
+          DateTime(shippedData.year, shippedData.month, shippedData.day - 2));
+      final freight = NumberFormat.currency(locale: 'en_US', symbol: '\$')
+          .format((random.nextInt(1000) + random.nextDouble()));
       orderDetails.add(OrderInfo(
         orderID: i.toString(),
         customerID: customerID[random.nextInt(15)],
@@ -375,12 +398,12 @@ class _OrderInfoRepository {
         firstName: firstNames[random.nextInt(15)],
         lastName: lastNames[random.nextInt(15)],
         gender: genders[random.nextInt(5)],
-        shipCountry: ship_Country,
+        shipCountry: _shipCountry,
         orderData: orderedData,
         shippingDate: shippedData,
-        freight: (random.nextInt(1000) + random.nextDouble()),
+        freight: freight,
         isClosed: (i + (random.nextInt(10)) > 2) ? true : false,
-        shipCity: ship_CityColl[random.nextInt(ship_CityColl.length)],
+        shipCity: _shipCityColl[random.nextInt(_shipCityColl.length)],
       ));
     }
 
